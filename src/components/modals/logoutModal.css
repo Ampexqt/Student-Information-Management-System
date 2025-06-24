@@ -1,0 +1,100 @@
+.logout-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.18);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: backdrop-filter 0.2s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.logout-modal-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  min-width: 340px;
+  max-width: 95vw;
+  padding: 2.5rem 2.5rem 2rem 2.5rem;
+  position: relative;
+  text-align: center;
+  font-family: 'Poppins', 'Inter', Arial, sans-serif;
+}
+
+.logout-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  color: #222;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.logout-modal-close:hover {
+  color: #ff4d4f;
+}
+
+.logout-modal-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.7rem;
+  color: #222;
+  background: #faffd7;
+  display: inline-block;
+  padding: 0.2em 0.7em;
+  border-radius: 8px;
+}
+
+.logout-modal-message {
+  font-size: 1.1rem;
+  color: #222;
+  margin-bottom: 2rem;
+  margin-top: 0.5rem;
+}
+
+.logout-modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1.2rem;
+}
+
+.logout-modal-logout {
+  background: #ff4d4f;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 0.7em 2.2em;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: 0 2px 8px rgba(255,77,79,0.08);
+}
+.logout-modal-logout:hover {
+  background: #d9363e;
+}
+
+.logout-modal-cancel {
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 0.7em 2.2em;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.logout-modal-cancel:hover {
+  background: #333;
+} 

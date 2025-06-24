@@ -1,0 +1,117 @@
+.view-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.22);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: backdrop-filter 0.2s;
+}
+
+.view-modal-card.minimalist {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  min-width: 320px;
+  max-width: 350px;
+  width: 100%;
+  padding: 1.2rem 1.2rem 1.1rem 1.2rem;
+  position: relative;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  animation: popIn 0.18s cubic-bezier(.4,2,.6,1) 1;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.97); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.view-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: #222;
+  cursor: pointer;
+  transition: color 0.2s;
+  z-index: 2;
+  opacity: 0.7;
+}
+.view-modal-close:hover {
+  color: #ff4d4f;
+  opacity: 1;
+}
+
+.view-modal-close.big {
+  font-size: 2rem;
+  top: 10px;
+  right: 14px;
+}
+
+.view-modal-title.minimalist {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+  color: #222;
+  background: #faffd7;
+  display: inline-block;
+  padding: 0.12em 0.5em;
+  border-radius: 7px;
+  align-self: center;
+  letter-spacing: 0.01em;
+}
+
+.view-modal-content.minimalist {
+  display: flex;
+  flex-direction: row;
+  gap: 1.1rem;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.view-modal-avatar.minimalist {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #f4f6f8;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-top: 0.1rem;
+  margin-right: 0.7rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.view-modal-avatar.minimalist img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.view-modal-info.minimalist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  font-size: 0.98rem;
+  flex: 1 1 70%;
+  color: #222;
+}
+
+.view-label {
+  display: block;
+  font-size: 0.87em;
+  color: #8a8f98;
+  font-weight: 500;
+  margin-bottom: 0.01em;
+  letter-spacing: 0.01em;
+}
