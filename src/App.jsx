@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import Login from './pages/loginPage/Login';
-import Dashboard from './pages/dashoard/Dashboard';
+import Login from './features/login/Login';
+import Dashboard from './features/dashboard/Dashboard';
 import { sessionManager } from './utils/config';
 import '@fontsource/poppins/600.css';
 import '@fontsource/poppins/700.css';
@@ -26,6 +26,14 @@ function App() {
     };
 
     checkAuthentication();
+  }, []);
+
+  // Re-check session on mount (redirect to login if session is missing)
+  useEffect(() => {
+    if (!sessionManager.getSession()) {
+      setIsAuthenticated(false);
+      setUserInfo(null);
+    }
   }, []);
 
   // Handler for login success

@@ -45,3 +45,25 @@ export async function generateStudentId() {
   const newId = `${year}-${String(maxIncrement + 1).padStart(5, '0')}`;
   return newId;
 }
+
+/**
+ * Fetch students by classId (e.g., classroomId_morning or classroomId_afternoon)
+ * @param {string} classId - The classId to filter students by
+ * @returns {Promise<Array<{ id: string, firstName: string, lastName: string, studentId: string }>>}
+ */
+export async function fetchStudentsByClassId(classId) {
+  const studentsRef = collection(db, "students");
+  const q = query(studentsRef, where("classId", "==", classId));
+  const snapshot = await getDocs(q);
+  const students = [];
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    students.push({
+      id: doc.id,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      studentId: data.studentId,
+    });
+  });
+  return students;
+}
