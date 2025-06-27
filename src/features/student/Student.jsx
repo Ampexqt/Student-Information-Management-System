@@ -8,7 +8,8 @@ import {
   doc,
   onSnapshot,
   getDocs,
-  increment
+  increment,
+  getDoc
 } from 'firebase/firestore';
 import StudentModal from '../../components/common/modals/StudentModal';
 import { DeleteModal } from '../../components/common/modals/logoutModal';
@@ -182,14 +183,23 @@ const Student = () => {
       // Decrement usedSlots in the correct classroom period if possible
       if (firestoreId && period) {
         const classroomRef = doc(db, 'Classroom', firestoreId);
-        await updateDoc(classroomRef, {
-          [`${period}.usedSlots`]: increment(-1)
-        });
+        const classroomSnap = await getDoc(classroomRef);
+        if (classroomSnap.exists()) {
+          await updateDoc(classroomRef, {
+            [`${period}.usedSlots`]: increment(-1)
+          });
+        }
+        // If classroom doesn't exist, do nothing
       }
       setShowDeleteModal(false);
       setDeleteId(null);
     } catch (err) {
-      alert('Error: ' + err.message);
+      // If the error message is about 'No document to update', just log it
+      if (err.message && err.message.includes('No document to update')) {
+        console.warn('Classroom document missing, but student deleted successfully.');
+      } else {
+        alert('Error: ' + err.message);
+      }
     }
     setLoading(false);
   };

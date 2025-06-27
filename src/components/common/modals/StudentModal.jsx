@@ -109,8 +109,8 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
         });
         console.log('Flattened classrooms:', classArr);
         setAllClasses(classArr);
-        // Extract unique grades
-        const uniqueGrades = Array.from(new Set(classArr.map(cls => cls.classGrade))).filter(Boolean);
+        // Extract unique grades and sort as 7,8,9,10
+        const uniqueGrades = Array.from(new Set(classArr.map(cls => cls.classGrade))).filter(Boolean).sort((a, b) => Number(a) - Number(b));
         setGrades(uniqueGrades);
         // Extract unique sections (not strictly needed for dropdown, but keep for compatibility)
         const uniqueSections = Array.from(new Set(classArr.map(cls => cls.classSection))).filter(Boolean);
@@ -193,7 +193,7 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
   const validateField = (name, value) => {
     switch (name) {
       case 'email':
-        if (!/^\S+@\S+\.\S+$/.test(value)) return 'Invalid email format.';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Invalid email format.';
         break;
       case 'contactNumber':
         if (value) {
@@ -205,6 +205,11 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
         if (value) {
           const birth = new Date(value);
           const now = new Date();
+          const minAge = 10;
+          const tenYearsAgo = new Date(now.getFullYear() - minAge, now.getMonth(), now.getDate());
+          if (birth > tenYearsAgo) {
+            return 'Student must be at least 10 years old.';
+          }
           const min = new Date(now.getFullYear() - 100, now.getMonth(), now.getDate());
           const max = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
           if (isNaN(birth.getTime()) || birth < min || birth > max) {
@@ -268,11 +273,20 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
   const handleSubmit = (e) => {
     e.preventDefault();
     setSubmitted(true);
-    // Validate birthdate
     let errors = validateForm();
+
+    // Validate birthdate (must be set and at least 10 years old)
     if (!birthdate) {
       errors.birthdate = 'Birthdate is required.';
+    } else {
+      const now = new Date();
+      const minAge = 10;
+      const tenYearsAgo = new Date(now.getFullYear() - minAge, now.getMonth(), now.getDate());
+      if (birthdate > tenYearsAgo) {
+        errors.birthdate = 'Student must be at least 10 years old.';
+      }
     }
+
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
     // Format birthdate as yyyy-MM-dd
@@ -651,11 +665,11 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
                       name="grade"
                       value={form.grade}
                       onChange={handleChange}
-                      style={{ ...studentSelectStyle, height: '36px', fontSize: '0.98rem' }}
+                      style={studentInputStyle}
                       required
                     >
                       <option value="">Select Grade</option>
-                      {grades.map(grade => (
+                      {staticGrades.map(grade => (
                         <option key={grade} value={grade}>{grade}</option>
                       ))}
                     </select>

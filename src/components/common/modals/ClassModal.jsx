@@ -420,7 +420,7 @@ const ClassModal = ({ open, onClose, onSubmit, initialData, mode }) => {
           </div>
         )}
         <div style={{ width: '100%', flex: 1, overflowY: 'auto', overflowX: 'hidden', maxHeight: '62vh', marginBottom: 0 }}>
-          <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12, padding: 0, flex: 1, minWidth: 0 }}>
+          <form onSubmit={handleSubmit} noValidate style={{ width: '100%', maxWidth: 540, margin: '0 auto', background: '#fff', borderRadius: 12, boxShadow: '0 4px 24px #0001', padding: 24, position: 'relative', zIndex: 10 }}>
             {/* Row 1: Teacher Name, Teacher ID */}
             <div style={{ display: 'flex', flexDirection: 'row', gap: 8, width: '100%' }}>
               <input
