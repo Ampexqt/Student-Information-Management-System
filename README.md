@@ -49,7 +49,13 @@ A simple, web-based system for managing students, classes, and classrooms—desi
 
 ## 🖥️ How to Use
 
-### Add a Class
+### Step 1: Add Classrooms (Required First)
+1. Go to **Classroom Management**
+2. Click **Add Classroom**
+3. Enter building name, floor, and room number
+4. Save the classroom
+
+### Step 2: Add Classes
 1. Go to **Class Management**
 2. Click **Add Class**
 3. Select grade (shift auto-assigned)
@@ -58,14 +64,18 @@ A simple, web-based system for managing students, classes, and classrooms—desi
 6. Set school year & max students
 7. Save
 
+### Step 3: Add Students
+1. Go to **Student Management**
+2. Click **Add Student**
+3. Fill in student details
+4. Select grade and assign to a class
+5. Save
+
 ### View Schedules
 - Click **Show Schedule Overview** to see all classes by shift, with subjects, teachers, and rooms.
 
 ### Manage Students
-1. Go to **Student Management**
-2. Add students with grade info
-3. Assign to classes
-4. Monitor class capacity
+- Monitor class capacity and student assignments in the Student Management section.
 
 ---
 
