@@ -1,3 +1,36 @@
+/**
+ * Student Management Component
+ * 
+ * This component provides comprehensive student management functionality for the
+ * Student Information Management System. It handles CRUD operations for students,
+ * real-time data synchronization, search, filtering, sorting, and pagination.
+ * 
+ * Key Features:
+ * - Real-time student data synchronization with Firebase
+ * - Add, edit, delete, and view student operations
+ * - Search functionality (Student ID, first name, last name)
+ * - Advanced sorting and filtering options
+ * - Pagination for large datasets
+ * - Class and classroom integration
+ * - Student count tracking per class
+ * - Responsive table design
+ * - Modal-based forms and confirmations
+ * 
+ * Data Management:
+ * - Firebase Firestore integration
+ * - Real-time updates using onSnapshot
+ * - Optimistic updates for better UX
+ * - Error handling and validation
+ * 
+ * UI Components:
+ * - Student table with sortable columns
+ * - Search and filter controls
+ * - Add/Edit/Delete action buttons
+ * - Pagination controls
+ * - Loading states and empty states
+ * - Modal dialogs for forms and confirmations
+ */
+
 import React, { useEffect, useState } from 'react';
 import { db } from '../../utils/firebase';
 import {
@@ -19,6 +52,10 @@ import { FaSearch, FaFilter } from 'react-icons/fa';
 import ViewStudentModal from '../../components/common/modals/viewStudentModals';
 import './Student.css';
 
+/**
+ * Initial form state for new student creation
+ * All fields are empty strings by default
+ */
 const initialForm = {
   address: '',
   birthdate: '',
@@ -30,27 +67,38 @@ const initialForm = {
   lastName: '',
 };
 
+/**
+ * Main Student management component
+ * Handles all student-related operations and UI
+ */
 const Student = () => {
-  const [students, setStudents] = useState([]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
-  const [modalData, setModalData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [classes, setClasses] = useState([]);
-  const [classrooms, setClassrooms] = useState([]);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteId, setDeleteId] = useState(null);
-  const [classStudentCounts, setClassStudentCounts] = useState({});
-  const [tableLoading, setTableLoading] = useState(true); // New loading state for table
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [viewStudent, setViewStudent] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const studentsPerPage = 3;
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
-  const [sortField, setSortField] = useState('');
-  const [sortOrder, setSortOrder] = useState('asc');
+  // State management for student data and UI
+  const [students, setStudents] = useState([]); // All students data
+  const [modalOpen, setModalOpen] = useState(false); // Modal visibility
+  const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit' mode
+  const [modalData, setModalData] = useState(null); // Data for edit mode
+  const [loading, setLoading] = useState(false); // Loading state for operations
+  const [editingId, setEditingId] = useState(null); // ID of student being edited
+  const [classes, setClasses] = useState([]); // Available classes
+  const [classrooms, setClassrooms] = useState([]); // Classroom data
+  const [showDeleteModal, setShowDeleteModal] = useState(false); // Delete confirmation modal
+  const [deleteId, setDeleteId] = useState(null); // ID of student to delete
+  const [classStudentCounts, setClassStudentCounts] = useState({}); // Student count per class
+  const [tableLoading, setTableLoading] = useState(true); // Table loading state
+  const [viewModalOpen, setViewModalOpen] = useState(false); // View modal visibility
+  const [viewStudent, setViewStudent] = useState(null); // Student data for view modal
+  
+  // Search and filtering state
+  const [searchQuery, setSearchQuery] = useState(''); // Search input value
+  const [currentPage, setCurrentPage] = useState(1); // Current page number
+  const studentsPerPage = 3; // Students per page for pagination
+  
+  // Sorting state
+  const [showSortDropdown, setShowSortDropdown] = useState(false); // Sort dropdown visibility
+  const [sortField, setSortField] = useState(''); // Field to sort by
+  const [sortOrder, setSortOrder] = useState('asc'); // Sort order (asc/desc)
+  
+  // Available sorting options
   const sortOptions = [
     { value: 'studentId', label: 'Student ID' },
     { value: 'firstName', label: 'First Name' },
@@ -59,7 +107,10 @@ const Student = () => {
     { value: 'room', label: 'Room' },
   ];
 
-  // Reset modal and editing state on mount
+  /**
+   * Effect hook to reset modal and editing state on component mount
+   * Ensures clean state when component is first loaded
+   */
   useEffect(() => {
     setModalOpen(false);
     setModalMode('add');
@@ -71,17 +122,24 @@ const Student = () => {
     setViewStudent(null);
   }, []);
 
-  // Real-time fetch students and classes in a single effect
+  /**
+   * Effect hook for real-time student data synchronization
+   * Listens to changes in the students collection and updates state accordingly
+   * Also fetches class data and calculates student counts per class
+   */
   useEffect(() => {
     setTableLoading(true);
-    // Listen to students in real-time
+    
+    // Listen to students collection in real-time
     const unsubStudents = onSnapshot(collection(db, 'students'), async (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setStudents(data);
+      
       // Fetch all classes and count students per class
       const classSnap = await getDocs(collection(db, 'Class'));
       const allClasses = classSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      // Count students per class
+      
+      // Calculate student count per class
       const classCounts = {};
       data.forEach(stu => {
         if (stu.classId) {
@@ -89,7 +147,8 @@ const Student = () => {
         }
       });
       setClassStudentCounts(classCounts);
-      // Filter classes with available slots and add slot info
+      
+      // Filter classes with available slots and add slot information
       const availableClasses = allClasses.map(cls => {
         const used = classCounts[cls.id] || 0;
         const max = parseInt(cls.maxStudents, 10) || 0;
@@ -100,13 +159,19 @@ const Student = () => {
           available: max > used,
         };
       }).filter(cls => cls.available);
+      
       setClasses(availableClasses);
       setTableLoading(false);
     });
+    
+    // Cleanup subscription on unmount
     return () => unsubStudents();
   }, []);
 
-  // Fetch classrooms for mapping
+  /**
+   * Effect hook to fetch classroom data
+   * Fetches all classrooms for mapping student room information
+   */
   useEffect(() => {
     async function fetchClassrooms() {
       const snap = await getDocs(collection(db, 'Classroom'));
@@ -115,6 +180,10 @@ const Student = () => {
     fetchClassrooms();
   }, []);
 
+  /**
+   * Opens the add student modal
+   * Resets form data and sets modal to add mode
+   */
   const openAddModal = () => {
     setModalMode('add');
     setModalData(null);
@@ -122,6 +191,11 @@ const Student = () => {
     setModalOpen(true);
   };
 
+  /**
+   * Opens the edit student modal
+   * Sets form data with existing student information
+   * @param {Object} student - Student object to edit
+   */
   const openEditModal = (student) => {
     setModalMode('edit');
     setModalData(student);
@@ -129,21 +203,32 @@ const Student = () => {
     setModalOpen(true);
   };
 
+  /**
+   * Closes the student modal
+   * Resets modal state and form data
+   */
   const closeModal = () => {
     setModalOpen(false);
     setModalData(null);
     setEditingId(null);
   };
 
+  /**
+   * Handles form submission for add/edit operations
+   * Creates or updates student data in Firebase
+   * @param {Object} form - Form data from modal
+   */
   const handleModalSubmit = async (form) => {
     setLoading(true);
     try {
       if (modalMode === 'edit' && editingId) {
+        // Update existing student
         await updateDoc(doc(db, 'students', editingId), {
           ...form,
           updatedAt: new Date(),
         });
       } else {
+        // Add new student
         await addDoc(collection(db, 'students'), {
           ...form,
           firestoreId: form.firestoreId,
@@ -151,7 +236,8 @@ const Student = () => {
           createdAt: new Date(),
           updatedAt: new Date(),
         });
-        // Increment usedSlots in the correct classroom period
+        
+        // Increment used slots in the classroom period
         if (form.firestoreId && form.period) {
           const classroomRef = doc(db, 'Classroom', form.firestoreId);
           await updateDoc(classroomRef, {
@@ -166,11 +252,20 @@ const Student = () => {
     setLoading(false);
   };
 
+  /**
+   * Initiates delete process for a student
+   * Shows confirmation modal before deletion
+   * @param {string} id - Student ID to delete
+   */
   const handleDelete = async id => {
     setDeleteId(id);
     setShowDeleteModal(true);
   };
 
+  /**
+   * Confirms and executes student deletion
+   * Deletes student and updates classroom slot count
+   */
   const confirmDelete = async () => {
     setLoading(true);
     try {
@@ -178,9 +273,11 @@ const Student = () => {
       const student = students.find(s => s.id === deleteId);
       let firestoreId = student?.firestoreId;
       let period = student?.period;
-      // Delete the student
+      
+      // Delete the student document
       await deleteDoc(doc(db, 'students', deleteId));
-      // Decrement usedSlots in the correct classroom period if possible
+      
+      // Decrement used slots in the classroom period if possible
       if (firestoreId && period) {
         const classroomRef = doc(db, 'Classroom', firestoreId);
         const classroomSnap = await getDoc(classroomRef);
@@ -191,10 +288,11 @@ const Student = () => {
         }
         // If classroom doesn't exist, do nothing
       }
+      
       setShowDeleteModal(false);
       setDeleteId(null);
     } catch (err) {
-      // If the error message is about 'No document to update', just log it
+      // Handle specific error for missing classroom document
       if (err.message && err.message.includes('No document to update')) {
         console.warn('Classroom document missing, but student deleted successfully.');
       } else {
@@ -204,11 +302,18 @@ const Student = () => {
     setLoading(false);
   };
 
+  /**
+   * Opens the view student modal
+   * @param {Object} student - Student object to view
+   */
   const openViewModal = (student) => {
     setViewStudent(student);
     setViewModalOpen(true);
   };
 
+  /**
+   * Closes the view student modal
+   */
   const closeViewModal = () => {
     setViewModalOpen(false);
     setViewStudent(null);
@@ -225,45 +330,68 @@ const Student = () => {
     );
   });
 
-  // Sorting logic
+  // Sorting logic for filtered students
   let sortedStudents = [...filteredStudents];
   if (sortField) {
     sortedStudents.sort((a, b) => {
       let aValue = '';
       let bValue = '';
+      
       if (sortField === 'class') {
+        // Sort by class ID
         aValue = a.classId || '';
         bValue = b.classId || '';
       } else if (sortField === 'room') {
+        // Sort by room information
         const aRoom = classrooms.find(r => r.id === a.firestoreId);
         const bRoom = classrooms.find(r => r.id === b.firestoreId);
         aValue = aRoom ? `${aRoom.buildingName}, ${aRoom.roomNumber}, ${aRoom.floor}` : '';
         bValue = bRoom ? `${bRoom.buildingName}, ${bRoom.roomNumber}, ${bRoom.floor}` : '';
       } else {
+        // Sort by direct field value
         aValue = (a[sortField] || '').toString();
         bValue = (b[sortField] || '').toString();
       }
+      
       const cmp = aValue.localeCompare(bValue, undefined, { numeric: true });
       return sortOrder === 'asc' ? cmp : -cmp;
     });
   }
 
-  // Pagination logic (use sortedStudents)
+  // Pagination logic
   const totalPages = Math.ceil(sortedStudents.length / studentsPerPage);
   const paginatedStudents = sortedStudents.slice(
     (currentPage - 1) * studentsPerPage,
     currentPage * studentsPerPage
   );
+  
+  // Reset to first page if current page is invalid
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(1);
   }, [searchQuery, sortedStudents.length, totalPages]);
 
   return (
     <>
-      <h2 className="student-page-title"><span className="dashboard-highlight">Student Management</span></h2>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: '20px', flexWrap: 'wrap' }}>
+      {/* Page Title */}
+      <h2 className="student-page-title">
+        <span className="dashboard-highlight">Student Management</span>
+      </h2>
+      
+      {/* Action Bar with Add Button and Search/Filter Controls */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        gap: 12, 
+        marginBottom: '20px', 
+        flexWrap: 'wrap' 
+      }}>
+        {/* Add Student Button */}
         <button onClick={openAddModal} className="student-add-btn">Add</button>
+        
+        {/* Search and Filter Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, position: 'relative' }}>
+          {/* Search Input */}
           <div className="student-search-container" style={{
             display: 'flex',
             alignItems: 'center',
@@ -295,7 +423,8 @@ const Student = () => {
               }}
             />
           </div>
-          {/* Filter/Sort Icon and Dropdown */}
+          
+          {/* Filter/Sort Dropdown */}
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setShowSortDropdown(v => !v)}
@@ -316,6 +445,8 @@ const Student = () => {
             >
               <FaFilter />
             </button>
+            
+            {/* Sort Options Dropdown */}
             {showSortDropdown && (
               <div style={{
                 position: 'absolute',
@@ -332,6 +463,7 @@ const Student = () => {
                 flexDirection: 'column',
                 gap: 0
               }}>
+                {/* Sort Field Options */}
                 {sortOptions.map(opt => (
                   <button
                     key={opt.value}
@@ -354,7 +486,11 @@ const Student = () => {
                     {opt.label}
                   </button>
                 ))}
+                
+                {/* Separator */}
                 <div style={{ borderTop: '1px solid #e5e7eb', margin: '6px 0' }} />
+                
+                {/* Sort Order Toggle */}
                 <button
                   onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
                   style={{
@@ -376,6 +512,8 @@ const Student = () => {
           </div>
         </div>
       </div>
+      
+      {/* Student Modal for Add/Edit */}
       <StudentModal
         open={modalOpen}
         onClose={closeModal}
@@ -387,6 +525,8 @@ const Student = () => {
         classStudentCounts={classStudentCounts}
         students={students}
       />
+      
+      {/* Delete Confirmation Modal */}
       <DeleteModal
         open={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
@@ -396,6 +536,8 @@ const Student = () => {
         confirmText="Delete"
         confirmClass="logout-modal-logout"
       />
+      
+      {/* View Student Modal */}
       <ViewStudentModal
         open={viewModalOpen}
         onClose={closeViewModal}
@@ -403,6 +545,8 @@ const Student = () => {
         classes={classes}
         classrooms={classrooms}
       />
+      
+      {/* Student Data Table */}
       <div className="table-responsive">
         <div className="student-table-wrapper" style={{ marginTop: 8 }}>
           <table className="student-table">
@@ -423,10 +567,13 @@ const Student = () => {
             </thead>
             <tbody>
               {tableLoading ? (
+                // Loading state
                 <tr><td colSpan={10} style={{ textAlign: 'center', padding: 24 }}>Loading...</td></tr>
               ) : sortedStudents.length === 0 ? (
+                // Empty state
                 <tr><td colSpan={10} style={{ textAlign: 'center', padding: 24 }}>No students found.</td></tr>
               ) : (
+                // Student data rows
                 paginatedStudents.map(student => (
                   <tr key={student.id}>
                     <td>{student.studentId || '-'}</td>
@@ -438,15 +585,18 @@ const Student = () => {
                     <td>{student.birthdate}</td>
                     <td>{student.gender}</td>
                     <td>
+                      {/* Class information with shift highlighting */}
                       {(() => {
                         const classroom = classrooms.find(r => r.id === student.firestoreId);
                         if (!classroom) return student.classId;
                         const periodData = classroom[student.period];
                         if (!periodData) return '';
-                        // Highlight shift
+                        
+                        // Highlight shift with color coding
                         const shiftLabel = student.period.charAt(0).toUpperCase() + student.period.slice(1);
                         const shiftColor = student.period === 'morning' ? '#f7fcbf' : '#c7d2fe';
                         const shiftTextColor = student.period === 'morning' ? '#222' : '#1e40af';
+                        
                         return (
                           <span>
                             {`Grade ${periodData.grade.replace('Grade ', '')} - ${periodData.section} `}
@@ -464,15 +614,17 @@ const Student = () => {
                       })()}
                     </td>
                     <td>
+                      {/* Room information */}
                       {(() => {
                         const classroom = classrooms.find(r => r.id === student.firestoreId);
                         if (!classroom) return '';
-                        // Use root-level fields for room info
                         return `${classroom.buildingName}, ${classroom.roomNumber}, ${classroom.floor}`;
                       })()}
                     </td>
                     <td>
+                      {/* Action buttons */}
                       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        {/* View button */}
                         <button
                           onClick={() => openViewModal(student)}
                           className="student-view-btn"
@@ -494,6 +646,8 @@ const Student = () => {
                         >
                           <FaEye />
                         </button>
+                        
+                        {/* Edit button */}
                         <button
                           onClick={() => openEditModal(student)}
                           className="student-edit-btn"
@@ -515,6 +669,8 @@ const Student = () => {
                         >
                           <FaEdit />
                         </button>
+                        
+                        {/* Delete button */}
                         <button
                           onClick={() => handleDelete(student.id)}
                           className="student-delete-btn"
@@ -545,6 +701,7 @@ const Student = () => {
           </table>
         </div>
       </div>
+      
       {/* Pagination Controls */}
       {sortedStudents.length > 3 && (
         <div className="pagination">
@@ -553,6 +710,8 @@ const Student = () => {
             disabled={currentPage === 1}
             className="pagination-btn"
           >Prev</button>
+          
+          {/* Page numbers */}
           {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
             <button
               key={page}
@@ -560,6 +719,7 @@ const Student = () => {
               className={`pagination-btn${page === currentPage ? ' active' : ''}`}
             >{page}</button>
           ))}
+          
           <button
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}

@@ -1,3 +1,46 @@
+/**
+ * Student Modal Component - Add/Edit Student Form
+ * 
+ * This component provides a comprehensive modal form for adding and editing
+ * student information in the Student Information Management System.
+ * 
+ * Key Features:
+ * - Add new student with auto-generated Student ID
+ * - Edit existing student information
+ * - Real-time form validation
+ * - Profile image upload integration
+ * - Dynamic class/section selection based on grade
+ * - Contact number formatting
+ * - Birthdate validation with age restrictions
+ * - Responsive design for mobile and desktop
+ * - Loading states and error handling
+ * 
+ * Form Fields:
+ * - Student ID (auto-generated, read-only)
+ * - Email (required, validated)
+ * - First Name (required)
+ * - Last Name (required)
+ * - Contact Number (formatted as ####-###-####)
+ * - Address
+ * - Birthdate (required, minimum age validation)
+ * - Gender (dropdown)
+ * - Grade (required, 7-10)
+ * - Section (required, filtered by grade)
+ * 
+ * Validation Rules:
+ * - Email must be valid format
+ * - Contact number must be 11 digits in ####-###-#### format
+ * - Student must be at least 10 years old
+ * - Student ID must be unique
+ * - All required fields must be filled
+ * 
+ * Integration:
+ * - Firebase Firestore for data persistence
+ * - Student image upload component
+ * - Class and classroom data integration
+ * - Real-time student count tracking
+ */
+
 import React, { useState, useEffect } from 'react';
 import '../../../features/login/login.css';
 import { db } from '../../../utils/firebase';
@@ -8,6 +51,10 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
 
+/**
+ * Initial form state for new student creation
+ * All fields are empty strings by default
+ */
 const initialForm = {
   address: '',
   birthdate: '',
@@ -20,25 +67,41 @@ const initialForm = {
   grade: '',
 };
 
+/**
+ * Static grade options available in the system
+ * Grades 7-10 are supported
+ */
 const staticGrades = [7, 8, 9, 10];
 
+/**
+ * Student Modal component for adding and editing students
+ * @param {boolean} open - Whether the modal is visible
+ * @param {Function} onClose - Function to close the modal
+ * @param {Function} onSubmit - Function to handle form submission
+ * @param {Object} initialData - Initial data for edit mode
+ * @param {boolean} loading - Loading state for form submission
+ * @param {string} mode - 'add' or 'edit' mode
+ * @param {Object} classStudentCounts - Student count per class
+ * @param {Array} students - Array of existing students for validation
+ */
 const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, classStudentCounts, students = [] }) => {
-  const [form, setForm] = useState(initialForm);
-  const [grades, setGrades] = useState([]);
-  const [sections, setSections] = useState([]);
-  const [allClasses, setAllClasses] = useState([]);
-  const [classes, setClasses] = useState([]);
-  const [loadingGrades, setLoadingGrades] = useState(false);
-  const [loadingClasses, setLoadingClasses] = useState(false);
-  const [birthdateInputType, setBirthdateInputType] = useState('text');
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [submitted, setSubmitted] = useState(false);
-  const [studentId, setStudentId] = useState('');
-  const [studentIdLoading, setStudentIdLoading] = useState(false);
-  const [birthdate, setBirthdate] = useState(null);
-  const [assignedClassroom, setAssignedClassroom] = useState(null);
+  // Form state management
+  const [form, setForm] = useState(initialForm); // Current form data
+  const [grades, setGrades] = useState([]); // Available grades from classrooms
+  const [sections, setSections] = useState([]); // Available sections
+  const [allClasses, setAllClasses] = useState([]); // All available classes
+  const [classes, setClasses] = useState([]); // Filtered classes based on grade
+  const [loadingGrades, setLoadingGrades] = useState(false); // Loading state for grade fetching
+  const [loadingClasses, setLoadingClasses] = useState(false); // Loading state for class fetching
+  const [birthdateInputType, setBirthdateInputType] = useState('text'); // Birthdate input type
+  const [fieldErrors, setFieldErrors] = useState({}); // Field validation errors
+  const [submitted, setSubmitted] = useState(false); // Whether form has been submitted
+  const [studentId, setStudentId] = useState(''); // Auto-generated student ID
+  const [studentIdLoading, setStudentIdLoading] = useState(false); // Loading state for student ID generation
+  const [birthdate, setBirthdate] = useState(null); // Birthdate as Date object
+  const [assignedClassroom, setAssignedClassroom] = useState(null); // Assigned classroom information
 
-  // Add a style object for compact, centered input fields
+  // Style objects for consistent form styling
   const studentInputStyle = {
     height: '44px',
     fontSize: '1rem',
@@ -52,6 +115,7 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
     outline: 'none',
     transition: 'border 0.2s',
   };
+  
   const studentSelectStyle = {
     ...studentInputStyle,
     paddingRight: '32px',
@@ -60,7 +124,8 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
     MozAppearance: 'none',
     background: 'transparent',
   };
-  // Add placeholder style globally for this modal
+  
+  // Global placeholder styling for the modal
   const placeholderStyle = `
     .student-modal-overlay .login-input::placeholder {
       color: #8a8f98;
@@ -76,14 +141,21 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
     }
   `;
 
-  // Fetch all classrooms and extract unique grades and sections on modal open
+  /**
+   * Effect hook to fetch classroom data and extract grades/sections
+   * Runs when modal opens to populate dropdown options
+   */
   useEffect(() => {
     if (open) {
       setLoadingGrades(true);
       getDocs(collection(db, 'Classroom')).then(snapshot => {
         const classArr = [];
+        
+        // Process each classroom document
         snapshot.docs.forEach(doc => {
           const data = doc.data();
+          
+          // Add morning shift class if available
           if (data.morning) {
             classArr.push({
               id: doc.id + '_morning',
@@ -95,6 +167,8 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
               ...data.morning
             });
           }
+          
+          // Add afternoon shift class if available
           if (data.afternoon) {
             classArr.push({
               id: doc.id + '_afternoon',
@@ -107,15 +181,22 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
             });
           }
         });
+        
         console.log('Flattened classrooms:', classArr);
         setAllClasses(classArr);
-        // Extract unique grades and sort as 7,8,9,10
-        const uniqueGrades = Array.from(new Set(classArr.map(cls => cls.classGrade))).filter(Boolean).sort((a, b) => Number(a) - Number(b));
+        
+        // Extract unique grades and sort numerically
+        const uniqueGrades = Array.from(new Set(classArr.map(cls => cls.classGrade)))
+          .filter(Boolean)
+          .sort((a, b) => Number(a) - Number(b));
         setGrades(uniqueGrades);
-        // Extract unique sections (not strictly needed for dropdown, but keep for compatibility)
-        const uniqueSections = Array.from(new Set(classArr.map(cls => cls.classSection))).filter(Boolean);
+        
+        // Extract unique sections
+        const uniqueSections = Array.from(new Set(classArr.map(cls => cls.classSection)))
+          .filter(Boolean);
         setSections(uniqueSections);
       }).catch(() => {
+        // Handle errors by setting empty arrays
         setAllClasses([]);
         setGrades([]);
         setSections([]);
@@ -123,13 +204,19 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
     }
   }, [open]);
 
+  /**
+   * Effect hook to handle form initialization and student ID generation
+   * Sets up form data based on mode (add/edit) and generates student ID for new students
+   */
   useEffect(() => {
     if (initialData) {
+      // Edit mode: populate form with existing data
       setForm({ ...initialForm, ...initialData });
       setStudentId(initialData.studentId || '');
       setStudentIdLoading(false);
       setBirthdate(initialData.birthdate ? new Date(initialData.birthdate) : null);
     } else if (open) {
+      // Add mode: reset form and generate new student ID
       setForm(initialForm);
       setStudentId('');
       setStudentIdLoading(true);
@@ -139,6 +226,7 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
       });
       setBirthdate(null);
     } else {
+      // Modal closed: reset all form state
       setForm(initialForm);
       setStudentId('');
       setStudentIdLoading(false);
@@ -146,27 +234,40 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
     }
   }, [initialData, open]);
 
-  // Filter sections for selected grade, or show all if no grade is selected
+  /**
+   * Effect hook to filter classes based on selected grade
+   * Updates available classes when grade selection changes
+   */
   useEffect(() => {
     setLoadingClasses(true);
     let filtered;
+    
     if (form.grade) {
+      // Filter classes by selected grade
       filtered = allClasses.filter(cls => String(cls.classGrade) === String(form.grade));
     } else {
+      // Show all classes if no grade selected
       filtered = allClasses;
     }
+    
     setClasses(filtered);
     setLoadingClasses(false);
+    
+    // Reset class selection if grade changes
     if (!form.classId) {
       setForm(f => ({ ...f, classId: '' }));
     }
   }, [form.grade, allClasses]);
 
-  // Compute the recommended classroom (with the fewest students) for suggestion
+  /**
+   * Computed value for recommended classroom
+   * Suggests the classroom with the fewest students for better distribution
+   */
   const recommendedClassroomId = React.useMemo(() => {
     if (form.grade && classes.length > 0) {
       let minCount = Infinity;
       let selectedClassroom = null;
+      
       classes.forEach(cls => {
         const used = classStudentCounts[cls.id] || 0;
         if (used < minCount) {
@@ -174,42 +275,63 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
           selectedClassroom = cls;
         }
       });
+      
       return selectedClassroom ? selectedClassroom.id : null;
     }
     return null;
   }, [form.grade, classes, classStudentCounts]);
 
+  /**
+   * Formats contact number input to ####-###-#### format
+   * @param {string} value - Raw input value
+   * @returns {string} - Formatted contact number
+   */
   const formatContactNumber = (value) => {
     // Remove all non-digit characters
     const digits = value.replace(/\D/g, '');
+    
     // Format as ####-###-####
     let formatted = '';
     if (digits.length > 0) formatted += digits.substring(0, 4);
     if (digits.length > 4) formatted += '-' + digits.substring(4, 7);
     if (digits.length > 7) formatted += '-' + digits.substring(7, 11);
+    
     return formatted;
   };
 
+  /**
+   * Validates individual form fields
+   * @param {string} name - Field name
+   * @param {string} value - Field value
+   * @returns {string} - Error message or empty string if valid
+   */
   const validateField = (name, value) => {
     switch (name) {
       case 'email':
+        // Email format validation
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Invalid email format.';
         break;
+        
       case 'contactNumber':
         if (value) {
-          // Should match ####-###-#### and be 11 digits
+          // Contact number format validation (####-###-#### with 11 digits)
           if (!/^\d{4}-\d{3}-\d{4}$/.test(value)) return 'Contact number must be in the format eg. 0970-983-6509 and has 11 digits';
         }
         break;
+        
       case 'birthdate':
         if (value) {
           const birth = new Date(value);
           const now = new Date();
           const minAge = 10;
           const tenYearsAgo = new Date(now.getFullYear() - minAge, now.getMonth(), now.getDate());
+          
+          // Check minimum age requirement
           if (birth > tenYearsAgo) {
             return 'Student must be at least 10 years old.';
           }
+          
+          // Check date validity (between 5 and 100 years ago)
           const min = new Date(now.getFullYear() - 100, now.getMonth(), now.getDate());
           const max = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
           if (isNaN(birth.getTime()) || birth < min || birth > max) {
@@ -217,20 +339,27 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
           }
         }
         break;
+        
       case 'studentId':
         if (value) {
+          // Check for duplicate student ID
           const duplicate = students.some(
             s => s.studentId === value && (mode !== 'edit' || s.id !== form.id)
           );
           if (duplicate) return 'Student ID already exists.';
         }
         break;
+        
       default:
         break;
     }
     return '';
   };
 
+  /**
+   * Validates the entire form
+   * @returns {Object} - Object containing field errors
+   */
   const validateForm = () => {
     const errors = {};
     Object.keys(form).forEach((key) => {
@@ -240,14 +369,23 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
     return errors;
   };
 
+  // Don't render if modal is not open
   if (!open) return null;
 
+  /**
+   * Handles form field changes with validation
+   * @param {Event} e - Change event
+   */
   const handleChange = e => {
     const { name, value } = e.target;
     let newValue = value;
+    
+    // Format contact number if needed
     if (name === 'contactNumber') {
       newValue = formatContactNumber(value);
     }
+    
+    // Handle class selection with additional data
     if (name === 'classId') {
       const selectedClass = allClasses.find(cls => cls.id === value);
       console.log('Selected class:', selectedClass);
@@ -260,22 +398,32 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
     } else {
       setForm(f => ({ ...f, [name]: newValue }));
     }
+    
+    // Validate field if form has been submitted
     if (submitted) {
       setFieldErrors(prev => ({ ...prev, [name]: validateField(name, newValue) }));
     }
   };
 
+  /**
+   * Handles input changes without special formatting
+   * @param {Event} e - Change event
+   */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setForm(f => ({ ...f, [name]: value }));
   };
 
+  /**
+   * Handles form submission with validation
+   * @param {Event} e - Submit event
+   */
   const handleSubmit = (e) => {
     e.preventDefault();
     setSubmitted(true);
     let errors = validateForm();
 
-    // Validate birthdate (must be set and at least 10 years old)
+    // Additional birthdate validation
     if (!birthdate) {
       errors.birthdate = 'Birthdate is required.';
     } else {
@@ -289,11 +437,22 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
 
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
-    // Format birthdate as yyyy-MM-dd
+    
+    // Format birthdate as yyyy-MM-dd for storage
     const formattedBirthdate = birthdate ? format(birthdate, 'yyyy-MM-dd') : '';
-    onSubmit({ ...form, birthdate: formattedBirthdate, studentId, firestoreId: form.firestoreId, period: form.period });
+    onSubmit({ 
+      ...form, 
+      birthdate: formattedBirthdate, 
+      studentId, 
+      firestoreId: form.firestoreId, 
+      period: form.period 
+    });
   };
 
+  /**
+   * Handles overlay click to close modal
+   * @param {Event} e - Click event
+   */
   const handleOverlayClick = e => {
     if (e.target === e.currentTarget) onClose();
   };
@@ -312,6 +471,7 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
       zIndex: 1000,
       padding: '1rem'
     }}>
+      {/* Responsive CSS styles */}
       <style>{`
         @media (max-width: 900px) {
           .modal-responsive { max-width: 99vw !important; padding: 0 !important; }
@@ -324,6 +484,8 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
           .modal-content form > div[style*='grid'] { grid-template-columns: 1fr !important; gap: 0.5rem !important; }
         }
       ` + placeholderStyle}</style>
+      
+      {/* Modal Container */}
       <div className="modal-responsive" style={{
         background: '#fff',
         borderRadius: '16px',
@@ -377,6 +539,7 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
             ×
           </button>
         </div>
+        
         {/* Modal Content (scrollable if needed) */}
         <div className="modal-content" style={{
           flex: '1 1 auto',
@@ -387,7 +550,7 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
           maxHeight: 'calc(98vh - 2.5rem)',
         }}>
           <div style={{ display: 'flex', flexDirection: 'row', gap: '1.5rem', alignItems: 'flex-start', justifyContent: 'center' }}>
-            {/* Profile Image Upload on the left */}
+            {/* Profile Image Upload Section */}
             <div style={{ minWidth: 120, maxWidth: 140, display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 0 }}>
               <StudentImageUpload
                 studentId={form.id || 'new'}
@@ -398,7 +561,8 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
                 style={{ width: 100, height: 100 }}
               />
             </div>
-            {/* All fields in a two-column grid, right of the image */}
+            
+            {/* Form Fields Section */}
             <form onSubmit={handleSubmit} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
               <div style={{
                 display: 'grid',
@@ -407,7 +571,7 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
                 alignItems: 'start',
                 marginBottom: '0.2rem',
               }}>
-                {/* Student ID */}
+                {/* Student ID Field (Auto-generated, Read-only) */}
                 <div style={{ gridColumn: '1/2' }}>
                   <label style={{ display: 'block', marginBottom: '0.15rem', fontWeight: '600', color: '#495057', fontSize: '1rem' }}>
                     Student ID *
@@ -433,7 +597,8 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
                     />
                   </div>
                 </div>
-                {/* Email */}
+                
+                {/* Email Field */}
                 <div style={{ gridColumn: '2/3' }}>
                   <label style={{ display: 'block', marginBottom: '0.15rem', fontWeight: '600', color: '#495057', fontSize: '1rem' }}>
                     Email *
@@ -463,7 +628,8 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
                     </div>
                   )}
                 </div>
-                {/* First Name */}
+                
+                {/* First Name Field */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.15rem', fontWeight: '600', color: '#495057', fontSize: '1rem' }}>
                     First Name *
@@ -493,7 +659,8 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
                     </div>
                   )}
                 </div>
-                {/* Last Name */}
+                
+                {/* Last Name Field */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.15rem', fontWeight: '600', color: '#495057', fontSize: '1rem' }}>
                     Last Name *
@@ -523,7 +690,8 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
                     </div>
                   )}
                 </div>
-                {/* Contact Number */}
+                
+                {/* Contact Number Field */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.15rem', fontWeight: '600', color: '#495057', fontSize: '1rem' }}>
                     Contact Number
@@ -552,7 +720,8 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
                     </div>
                   )}
                 </div>
-                {/* Address */}
+                
+                {/* Address Field */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.15rem', fontWeight: '600', color: '#495057', fontSize: '1rem' }}>
                     Address
@@ -576,7 +745,8 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
                     />
                   </div>
                 </div>
-                {/* Birthdate */}
+                
+                {/* Birthdate Field */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.15rem', fontWeight: '600', color: '#495057', fontSize: '1rem' }}>
                     Birthdate *
@@ -610,7 +780,8 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
                     </div>
                   )}
                 </div>
-                {/* Gender */}
+                
+                {/* Gender Field */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.15rem', fontWeight: '600', color: '#495057', fontSize: '1rem' }}>
                     Gender
@@ -646,7 +817,8 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
                     </div>
                   </div>
                 </div>
-                {/* Grade */}
+                
+                {/* Grade Field */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.15rem', fontWeight: '600', color: '#495057', fontSize: '1rem' }}>
                     Grade *
@@ -688,7 +860,8 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
                     </div>
                   )}
                 </div>
-                {/* Section */}
+                
+                {/* Section Field */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.15rem', fontWeight: '600', color: '#495057', fontSize: '1rem' }}>
                     Section *
@@ -742,6 +915,7 @@ const StudentModal = ({ open, onClose, onSubmit, initialData, loading, mode, cla
                   </div>
                 </div>
               </div>
+              
               {/* Submit Button */}
               <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginTop: '0.3rem' }}>
                 <button
